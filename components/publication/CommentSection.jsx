@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { MessageCircle, Send, Loader2, Reply, ChevronDown, ChevronUp } from "lucide-react"
+import { MessageCircle, Send, Loader2, Reply, ChevronDown, ChevronUp, Trash2 } from "lucide-react"
 import { getImageUrl } from "@/lib/pocketbase"
 
 export function CommentSection({
@@ -12,16 +12,18 @@ export function CommentSection({
   commentsLoading = false,
   onSubmitComment,
   onSubmitReply,
+  onDeleteComment,
   commentSubmitting = false,
 }) {
   const [newComment, setNewComment] = useState("")
   const [replyingToId, setReplyingToId] = useState(null)
   const [replyContent, setReplyContent] = useState("")
   const [expandedReplies, setExpandedReplies] = useState({})
+  const [deletingId, setDeletingId] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const replyTextareaRef = useRef(null)
   const mainCommentRef = useRef(null)
 
-  // Auto-focus reply textarea when reply form opens
   useEffect(() => {
     if (replyingToId && replyTextareaRef.current) {
       setTimeout(() => {
@@ -29,13 +31,6 @@ export function CommentSection({
       }, 0)
     }
   }, [replyingToId])
-
-  // Auto-focus main comment textarea
-  useEffect(() => {
-    if (mainCommentRef.current && newComment === "") {
-      // Don't auto-focus unless user clicks
-    }
-  }, [])
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -50,7 +45,6 @@ export function CommentSection({
   const handleCommentSubmit = (e) => {
     e.preventDefault()
     if (!newComment.trim()) return
-
     onSubmitComment(newComment.trim())
     setNewComment("")
   }
@@ -58,10 +52,29 @@ export function CommentSection({
   const handleReplySubmit = (e, parentCommentId) => {
     e.preventDefault()
     if (!replyContent.trim()) return
-
     onSubmitReply(replyContent.trim(), parentCommentId)
     setReplyContent("")
     setReplyingToId(null)
+  }
+
+  const handleDeleteClick = (commentId) => {
+    // First click shows confirm, second click deletes
+    if (confirmDeleteId === commentId) {
+      handleDeleteConfirm(commentId)
+    } else {
+      setConfirmDeleteId(commentId)
+      // Auto-dismiss confirm state after 3 seconds
+      setTimeout(() => {
+        setConfirmDeleteId((prev) => (prev === commentId ? null : prev))
+      }, 3000)
+    }
+  }
+
+  const handleDeleteConfirm = async (commentId) => {
+    setDeletingId(commentId)
+    setConfirmDeleteId(null)
+    await onDeleteComment(commentId)
+    setDeletingId(null)
   }
 
   const toggleReplies = (commentId) => {
@@ -71,10 +84,8 @@ export function CommentSection({
     }))
   }
 
-  // Filter top-level comments (no parent)
   const topLevelComments = comments.filter((comment) => !comment.parent_comment)
 
-  // Get replies for a comment
   const getReplies = (parentCommentId) => {
     return comments.filter((comment) => comment.parent_comment === parentCommentId)
   }
@@ -82,9 +93,12 @@ export function CommentSection({
   const CommentItem = ({ comment, isReply = false, level = 0 }) => {
     const replies = getReplies(comment.id)
     const isExpanded = expandedReplies[comment.id]
+    const isOwner = currentUser?.id === comment.user || currentUser?.id === comment.expand?.user?.id
+    const isDeleting = deletingId === comment.id
+    const isConfirming = confirmDeleteId === comment.id
 
     return (
-      <div key={comment.id} className={`${isReply ? "ml-6 md:ml-12" : ""}`}>
+      <div className={`${isReply ? "ml-6 md:ml-12" : ""}`}>
         <div className="flex gap-4 mb-4">
           {/* User Avatar */}
           <div className="flex-shrink-0">
@@ -94,7 +108,6 @@ export function CommentSection({
                   src={getImageUrl(comment.expand.user, comment.expand.user.avatar) || "/placeholder.svg"}
                   alt={comment.expand?.user?.name}
                   className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                  title={comment.expand?.user?.name || comment.expand?.user?.email}
                 />
               </Link>
             ) : (
@@ -113,22 +126,44 @@ export function CommentSection({
           {/* Comment Content */}
           <div className="flex-1 min-w-0">
             {/* Comment Header */}
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <Link
-                href={`/user/${comment.expand?.user?.id}`}
-                className="font-medium text-gray-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
-                title="View user profile"
-              >
-                {comment.expand?.user?.name || comment.expand?.user?.email}
-              </Link>
-              <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(comment.created)}</span>
-              {comment.updated > comment.created && (
-                <span className="text-xs text-gray-400 dark:text-gray-500 italic">(edited)</span>
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href={`/user/${comment.expand?.user?.id}`}
+                  className="font-medium text-gray-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                >
+                  {comment.expand?.user?.name || comment.expand?.user?.email}
+                </Link>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{formatDate(comment.created)}</span>
+                {comment.updated > comment.created && (
+                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">(edited)</span>
+                )}
+              </div>
+
+              {/* Delete button — only visible to comment owner */}
+              {isOwner && (
+                <button
+                  onClick={() => handleDeleteClick(comment.id)}
+                  disabled={isDeleting}
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${
+                    isConfirming
+                      ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60"
+                      : "text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={isConfirming ? "Click again to confirm delete" : "Delete comment"}
+                >
+                  {isDeleting ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={13} />
+                  )}
+                  {isConfirming && <span>Confirm?</span>}
+                </button>
               )}
             </div>
 
             {/* Comment Body */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2">
+            <div className={`p-3 rounded-lg mb-2 transition-opacity ${isDeleting ? "opacity-40" : ""} bg-gray-50 dark:bg-gray-700`}>
               <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                 {comment.content}
               </p>
@@ -165,7 +200,10 @@ export function CommentSection({
 
             {/* Reply Form */}
             {replyingToId === comment.id && (
-              <form onSubmit={(e) => handleReplySubmit(e, comment.id)} className="mt-4 p-3 bg-gray-100 dark:bg-gray-600 rounded-lg">
+              <form
+                onSubmit={(e) => handleReplySubmit(e, comment.id)}
+                className="mt-4 p-3 bg-gray-100 dark:bg-gray-600 rounded-lg"
+              >
                 <input
                   ref={replyTextareaRef}
                   type="text"

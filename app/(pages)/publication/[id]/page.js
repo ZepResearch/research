@@ -15,6 +15,7 @@ import {
   getPublicationFiles,
   incrementDownloadCount,
   getImageUrl,
+  deleteComment,
 } from "@/lib/pocketbase"
 import { Calendar, User, Eye, Download, MessageCircle, ExternalLink, Loader2, FileText } from "lucide-react"
 import { ImageGallery } from "@/components/image-gallery"
@@ -89,7 +90,15 @@ export default function PublicationDetailPage() {
     }
     setCommentSubmitting(false)
   }
-
+// add this handler in PublicationDetailPage
+const handleCommentDelete = async (commentId) => {
+  const result = await deleteComment(commentId)
+  if (result.success) {
+    loadComments()
+  } else {
+    setError(result.error)
+  }
+}
   const handleCommentReplySubmit = async (content, parentCommentId) => {
     setCommentSubmitting(true)
     const result = await createCommentReply(id, user.id, content, parentCommentId)
@@ -393,6 +402,7 @@ export default function PublicationDetailPage() {
             commentsLoading={commentsLoading}
             onSubmitComment={handleCommentSubmit}
             onSubmitReply={handleCommentReplySubmit}
+            onDeleteComment={handleCommentDelete}
             commentSubmitting={commentSubmitting}
           />
         </main>
