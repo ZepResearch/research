@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, CheckCircle } from "lucide-react"
 import { MeshGradientComponent } from "@/components/mesh-gradient"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { signupWithEmail, authWithGoogle } from "@/lib/pocketbase"
@@ -16,6 +16,7 @@ export default function SignupPage() {
     password: "",
     passwordConfirm: "",
     name: "",
+    phone_no: "",
     researcher_type: "",
     institution: "",
     department: "",
@@ -106,6 +107,10 @@ export default function SignupPage() {
     }
     if (!formData.name.trim()) {
       setError("Full name is required")
+      return
+    }
+    if (!formData.phone_no.trim()) {
+      setError("Phone number is required")
       return
     }
     if (!formData.password.trim()) {
@@ -221,6 +226,28 @@ export default function SignupPage() {
                           placeholder="Enter your full name"
                         />
                       </div>
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Phone Number *
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                          type="tel"
+                          name="phone_no"
+                          value={formData.phone_no}
+                          onChange={handleChange}
+                          required
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                          placeholder="+1 234 567 8900"
+                        />
+                      </div>
+                      <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                        Please include your country code (e.g. +1, +44, +91).
+                      </p>
                     </div>
 
                     {/* Password */}
