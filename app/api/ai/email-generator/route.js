@@ -87,7 +87,7 @@ ${additionalNotes ? `- Additional Notes: ${additionalNotes}` : ''}
     console.log('Calling OpenRouter API with model: anthropic/claude-3.5-haiku')
 
     const completion = await client.chat.completions.create({
-      model: 'anthropic/claude-3.5-haiku',
+      model: 'google/gemini-2.5-flash-lite:online',
       max_tokens: 700,
       temperature: 0.7,
 

@@ -6,8 +6,9 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useTheme } from "@/contexts/theme-context"
-import { Search, Plus, User, LogOut, Sun, Moon, Monitor, Menu, X, Book, FileText, Crown, ExternalLink } from "lucide-react"
+import { Search, Plus, User, LogOut, Sun, Moon, Monitor, Menu, X, Book, FileText, Crown, ExternalLink, LayoutDashboard, Shield, ShieldUser } from "lucide-react"
 import { getImageUrl } from "@/lib/pocketbase"
+import { isAdminUser } from "@/lib/auth/isAdmin"
 import { NoiseBackground } from "@/components/ui/noise-background"
 import {
   DropdownMenu,
@@ -129,6 +130,29 @@ export const Navbar = () => {
 
                 <DropdownMenuContent align="end" className="w-52">
 
+                  {/* Dashboard section */}
+                  <DropdownMenuLabel className="text-xs text-gray-400 uppercase tracking-wider font-semibold px-2 py-1">
+                    Dashboard
+                  </DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                      <LayoutDashboard size={15} />
+                      My Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+
+                  {/* Admin Panel link — only visible for admin users */}
+                  {isAdminUser(user) && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="flex items-center gap-2 cursor-pointer text-blue-600 dark:text-blue-400">
+                        <ShieldUser size={15}  className="text-blue-600 dark:text-blue-400" />
+                        Admin Panel
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuSeparator />
+
                   {/* Profile section */}
                   <DropdownMenuLabel className="text-xs text-gray-400 uppercase tracking-wider font-semibold px-2 py-1">
                     Profile
@@ -222,6 +246,28 @@ export const Navbar = () => {
 
             {/* Mobile Navigation Links */}
             <div className="space-y-1">
+              {/* Dashboard link */}
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-4 py-2 text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <LayoutDashboard size={16} />
+                My Dashboard
+              </Link>
+
+              {/* Admin Panel link — only for admin users */}
+              {isAdminUser(user) && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 px-4 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Shield size={16} />
+                  Admin Panel
+                </Link>
+              )}
+
               <Link
                 href="/create-publication"
                 className="flex items-center gap-2 px-4 py-2 text-cyan-600 dark:text-cyan-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
