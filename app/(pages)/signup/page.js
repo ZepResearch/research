@@ -26,6 +26,7 @@ export default function SignupPage() {
     orcid_id: "",
     website: "",
     is_scientific: false,
+    emailVisibility: true,
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
