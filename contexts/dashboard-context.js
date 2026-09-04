@@ -100,8 +100,18 @@ export const DashboardProvider = ({ children }) => {
         journalSubmissions: [],
       }
 
+      // Check if user is authenticated
+      if (!userId) {
+        console.error("User ID is missing - user may not be authenticated")
+        setLoading(false)
+        return
+      }
+
       // Fetch conferences
-      const confResult = await getConferences().catch(() => ({ success: false, data: [] }))
+      const confResult = await getConferences().catch((err) => {
+        console.error("Error fetching conferences:", err)
+        return { success: false, data: [] }
+      })
       if (confResult.success && confResult.data) {
         data.conferences = confResult.data
       }
@@ -113,7 +123,10 @@ export const DashboardProvider = ({ children }) => {
           filter: `user = "${userId}"`,
           sort: "-created",
         })
-        .catch(() => ({ items: [], totalItems: 0 }))
+        .catch((err) => {
+          console.error("Error fetching registrations:", err)
+          return { items: [], totalItems: 0 }
+        })
       data.registrations = regsResult.items || []
 
       // Fetch publications
@@ -123,7 +136,10 @@ export const DashboardProvider = ({ children }) => {
           filter: `user = "${userId}"`,
           sort: "-created",
         })
-        .catch(() => ({ items: [], totalItems: 0 }))
+        .catch((err) => {
+          console.error("Error fetching publications:", err)
+          return { items: [], totalItems: 0 }
+        })
       data.publications = pubsResult.items || []
 
       // Fetch membership
@@ -133,27 +149,37 @@ export const DashboardProvider = ({ children }) => {
           filter: `user = "${userId}"`,
           sort: "-created",
         })
-        .catch(() => ({ items: [] }))
+        .catch((err) => {
+          console.error("Error fetching membership:", err)
+          return { items: [] }
+        })
       data.membership = membershipResult.items?.[0] || null
 
       // Fetch conference submissions
       const confSubResult = await pb
-        .collection("paper_form_submission")
+        .collection("conf_paper_submission_all")
         .getList(1, 50, {
           filter: `user = "${userId}"`,
-          sort: "-created",
+          expand: "conference",
         })
-        .catch(() => ({ items: [], totalItems: 0 }))
+        .catch((err) => {
+          console.error("Error fetching conference submissions:", err.message, err)
+          return { items: [], totalItems: 0 }
+        })
       data.conferenceSubmissions = confSubResult.items || []
+      console.log("Conference submissions fetched:", data.conferenceSubmissions)
 
       // Fetch journal submissions
       const journalSubResult = await pb
-        .collection("paper_form_submission")
+        .collection("conf_paper_submission_all")
         .getList(1, 50, {
           filter: `user = "${userId}"`,
-          sort: "-created",
+          expand: "conference",
         })
-        .catch(() => ({ items: [], totalItems: 0 }))
+        .catch((err) => {
+          console.error("Error fetching journal submissions:", err.message, err)
+          return { items: [], totalItems: 0 }
+        })
       data.journalSubmissions = journalSubResult.items || []
 
       // Update state and cache
