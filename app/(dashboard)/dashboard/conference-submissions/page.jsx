@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { useDashboardData } from "@/contexts/dashboard-context"
 import RefreshDashboardButton from "@/components/dashboard/RefreshDashboardButton"
 import pb, { getImageUrl } from "@/lib/pocketbase"
-import zpb, { getConferenceById, getImageUrl as getZepImageUrl } from "@/lib/zep-pocketbase"
 import {
   FileText,
   ArrowLeft,
@@ -95,15 +94,13 @@ export default function ConferenceSubmissionsPage() {
             </div>
           ) : (
             submissions.map((sub) => {
-              const conf = sub.confData || sub.expand?.conference
-              const confTitle = conf?.title || sub.conf_name || "Conference Paper Submission"
-              const confLocation = conf?.location || sub.country || "Online"
-              const confDate = conf?.date || (conf?.field ? new Date(conf.field).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "")
+              const conf = sub.expand?.conference
+              const confTitle = conf?.title || "Conference Paper Submission"
+              const confLocation = conf?.location || "Online"
+              const confDate = conf?.date || ""
               const confDescription = conf?.shortDescription || conf?.description || ""
               const websiteUrl = conf?.websiteUrl
-              const confImg = conf?.img
-                ? (conf.img.startsWith("http") ? conf.img : getZepImageUrl(conf, conf.img))
-                : null
+              const confImg = conf?.img || null
 
               const createdDate = sub.created
                 ? new Date(sub.created).toLocaleDateString("en-US", {
@@ -179,7 +176,11 @@ export default function ConferenceSubmissionsPage() {
                         )}
                         {confDate && (
                           <span className="inline-flex items-center gap-1">
-                            <Clock size={13} className="text-cyan-600 dark:text-cyan-400" /> {confDate}
+                            <Clock size={13} className="text-cyan-600 dark:text-cyan-400" /> 
+                            {typeof confDate === "string" && confDate.length > 10 
+                              ? new Date(confDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                              : confDate
+                            }
                           </span>
                         )}
                         {conf?.cpd_accredited && (
